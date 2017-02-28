@@ -96,7 +96,7 @@ neuralnet* new_neuralnet(int numinputs, int numlayers, int* layersizes) {
 	return nn;
 }
 
-int destroy_neuralnet(neuralnet* nn) {
+void destroy_neuralnet(neuralnet* nn) {
 	for(int l = 0; l < nn->numlayers; l++) {
 		free(nn->layers[l].inputs);
 		free(nn->layers[l].outputs);
@@ -120,11 +120,11 @@ double get_bias_gradient(neuralnet* nn, int layer, int node) {
 	check_node(nn, layer, node);
 	return nn->layers[layer-1].biasgradients[node];
 }
-int set_bias(neuralnet* nn, int layer, int node, double value) {
+void set_bias(neuralnet* nn, int layer, int node, double value) {
 	check_node(nn, layer, node);
 	nn->layers[layer-1].biases[node] = value;
 }
-int set_bias_gradient(neuralnet* nn, int layer, int node, double value) {
+void set_bias_gradient(neuralnet* nn, int layer, int node, double value) {
 	check_node(nn, layer, node);
 	nn->layers[layer-1].biasgradients[node] = value;
 }
@@ -140,13 +140,13 @@ double get_weight_gradient(neuralnet* nn, int layer1, int node1, int layer2, int
 	int l2size = nn->layers[layer2-1].size;
 	return nn->layers[layer2-1].weightgradients[l2size*node1+node2];
 }
-int set_weight(neuralnet* nn, int layer1, int node1, int layer2, int node2, double value) {
+void set_weight(neuralnet* nn, int layer1, int node1, int layer2, int node2, double value) {
 	check_node(nn, layer1, node1);
 	check_node(nn, layer2, node2);
 	int l2size = nn->layers[layer2-1].size;
 	nn->layers[layer2-1].weights[l2size*node1+node2] = value;
 }
-int set_weight_gradient(neuralnet* nn, int layer1, int node1, int layer2, int node2, double value) {
+void set_weight_gradient(neuralnet* nn, int layer1, int node1, int layer2, int node2, double value) {
 	check_node(nn, layer1, node1);
 	check_node(nn, layer2, node2);
 	int l2size = nn->layers[layer2-1].size;
@@ -157,7 +157,7 @@ double get_delta(neuralnet* nn, int layer, int node) {
 	return nn->layers[layer-1].deltas[node];
 }
 
-int set_delta(neuralnet* nn, int layer, int node, double value) {
+void set_delta(neuralnet* nn, int layer, int node, double value) {
 	check_node(nn, layer, node);
 	nn->layers[layer-1].deltas[node] = value;
 }
@@ -170,7 +170,7 @@ double get_input(neuralnet* nn, int layer, int node) {
 		return nn->layers[layer-1].inputs[node];
 }
 
-int set_input(neuralnet* nn, int layer, int node, double value) {
+void set_input(neuralnet* nn, int layer, int node, double value) {
 	check_node(nn, layer, node);
 	if(layer == 0)
 		nn->inputs[node] = value;
@@ -191,7 +191,6 @@ int get_layersize(neuralnet* nn, int layer) {
 	if(layer == 0)
 		return nn->numinputs;
 	return nn->layers[layer-1].size;
-	printf("notes: %d",c->n_notes);
 }
 
 double sigmoid(double z) {
@@ -203,7 +202,7 @@ double sigmoid(double z) {
 	return s*(1-s);
 }*/
 
-int input_data(neuralnet* nn, double* data) {
+void input_data(neuralnet* nn, double* data) {
 	for(int i = 0; i < nn->numinputs; i++) {
 		nn->inputs[i]=data[i];
 	}
@@ -227,7 +226,7 @@ double calculate_output(neuralnet* nn, int layer, int node) {
 }
 
 
-int feedforward(neuralnet* nn, double* inputs) {
+void feedforward(neuralnet* nn, double* inputs) {
 	input_data(nn, inputs);
 	int outputsize = get_layersize(nn, nn->numlayers);
 	calculate_output(nn, nn->numlayers, 0);
@@ -244,7 +243,7 @@ int feedforward(neuralnet* nn, double* inputs) {
 	
 }
 
-int propagateback(neuralnet* nn, double* targets) {
+void propagateback(neuralnet* nn, double* targets) {
 	//output layer
 	int l = nn->numlayers;
 	int lsize = get_layersize(nn,l);
@@ -294,7 +293,7 @@ int propagateback(neuralnet* nn, double* targets) {
 	
 }
 
-int update_weights(neuralnet* nn, double rate) {
+void update_weights(neuralnet* nn, double rate) {
 	for(int l = 0; l < nn->numlayers; l++) {
 		int l1size = get_layersize(nn,l);
 		int l2size = get_layersize(nn,l+1);
