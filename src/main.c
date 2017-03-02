@@ -9,7 +9,7 @@
 #define RATE 1.0
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define HIDDENSIZE	15
-#define NOTESIZE		17
+#define NOTESIZE		18
 #define IPN	1
 void fillinput(neuralnet* nn, note* n, int mode);
 void train(neuralnet*nn, note* n);
@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
 	}
 	for(int g = 0; g<500;g++) {
 		for(int p=0; p< argc-1;p++) {
-			fillinput(nn,parts[p]->notes[0],2);
+			fillinput(nn,parts[p]->notes[0],0);
 			for(int i=1;i<MIN(parts[p]->size,g/IPN+2);i++) {
 				train(nn,parts[p]->notes[i]);
 				fillinput(nn,parts[p]->notes[i-1],1);
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 	part *pout = newPart();
 	note* n = newNote(0,0,2,4,0,0);
 	pushNote(pout, n);
-	fillinput(nn,n,2);
+	fillinput(nn,n,0);
 	for(int i =1; i< 200; i++) {
 		pushNote(pout,parseoutput(nn));
 		fillinput(nn,pout->notes[i-1],1);
@@ -67,35 +67,38 @@ void fillinput(neuralnet* nn, note* n, int mode) {
 		for(int i = 0; i< HIDDENSIZE;i++)
 			inputs[i]=random_normal();
 	}
-	inputs[n->tone+HIDDENSIZE]=1;
+	if(n->rest==1)
+		inputs[HIDDENSIZE]=1;
+	else
+		inputs[n->tone+HIDDENSIZE+1]=1;
 	if(n->accidental==-1) 
-		inputs[HIDDENSIZE+7]=1;
-	else if(n->accidental==1)
 		inputs[HIDDENSIZE+8]=1;
+	else if(n->accidental==1)
+		inputs[HIDDENSIZE+9]=1;
 	switch(n->octave) {
 		case 1:
-			inputs[HIDDENSIZE+9]=1;
-			break;
-		case 2:
 			inputs[HIDDENSIZE+10]=1;
 			break;
-		case 3:
+		case 2:
 			inputs[HIDDENSIZE+11]=1;
+			break;
+		case 3:
+			inputs[HIDDENSIZE+12]=1;
 	}
 	switch(n->duration) {
 		case 2:
-			inputs[HIDDENSIZE+12]=1;
-			break;
-		case 4:
 			inputs[HIDDENSIZE+13]=1;
 			break;
-		case 8:
+		case 4:
 			inputs[HIDDENSIZE+14]=1;
+			break;
+		case 8:
+			inputs[HIDDENSIZE+15]=1;
 	}
 	if(n->dotted==1)
-		inputs[HIDDENSIZE+15]=1;
-	if(n->tie==1)
 		inputs[HIDDENSIZE+16]=1;
+	if(n->tie==1)
+		inputs[HIDDENSIZE+17]=1;
 	feedforward(nn, inputs);
 	free(inputs);
 }
@@ -103,64 +106,67 @@ void fillinput(neuralnet* nn, note* n, int mode) {
 void train(neuralnet*nn, note* n) {
 	double *targets = malloc(NOTESIZE*sizeof(double));
 	memset(targets, 0, NOTESIZE*sizeof(double));
-	targets[n->tone]=1;
+	if(n->rest==1)
+		targets[0]=1;
+	else
+		targets[n->tone+1]=1;
 	if(n->accidental==-1)
-		targets[7]=1;
-	else if(n->accidental==1)
 		targets[8]=1;
+	else if(n->accidental==1)
+		targets[9]=1;
 	switch(n->octave) {
 		case 1:
-			targets[9]=1;
-			break;
-		case 2:
 			targets[10]=1;
 			break;
-		case 3:
+		case 2:
 			targets[11]=1;
+			break;
+		case 3:
+			targets[12]=1;
 	}
 	switch(n->duration) {
 		case 2:
-			targets[12]=1;
-			break;
-		case 4:
 			targets[13]=1;
 			break;
-		case 8:
+		case 4:
 			targets[14]=1;
+			break;
+		case 8:
+			targets[15]=1;
 	}
 	if(n->dotted==1)
-		targets[15]=1;
-	if(n->tie==1)
 		targets[16]=1;
+	if(n->tie==1)
+		targets[17]=1;
 	propagateback(nn,targets);
 	free(targets);
 }
 
 note* parseoutput(neuralnet* nn) {
 	int t=0;
-	for(int i = 0; i<7;i++) {
+	for(int i = 0; i<8;i++) {
 		if(get_output(nn, nn->numlayers,t)<get_output(nn,nn->numlayers,i))
 			t=i;
 	}
 	int a=0;
-	int f=get_output(nn, nn->numlayers, 7);
-	int s=get_output(nn, nn->numlayers, 8);
+	int f=get_output(nn, nn->numlayers, 8);
+	int s=get_output(nn, nn->numlayers, 9);
 	if(f>0.8 || s>0.8)
 		a=(f>s)?-1:1;
 	int o=0;
 	for(int i = 0; i<3;i++) {
-		if(get_output(nn, nn->numlayers,o+9)<get_output(nn,nn->numlayers,i+9))
+		if(get_output(nn, nn->numlayers,o+10)<get_output(nn,nn->numlayers,i+10))
 			o=i;
 	}
 	int d=0;
 	for(int i = 0; i<3;i++) {
-		if(get_output(nn, nn->numlayers,d+12)<get_output(nn,nn->numlayers,i+12))
+		if(get_output(nn, nn->numlayers,d+13)<get_output(nn,nn->numlayers,i+13))
 			d=i;
 	}
 	int dot=0, tie=0;
-	if(get_output(nn, nn->numlayers,15) > 0.8)
-		dot=1;
 	if(get_output(nn, nn->numlayers,16) > 0.8)
+		dot=1;
+	if(get_output(nn, nn->numlayers,17) > 0.8)
 		tie=1;
-	return newNote(t,a,o+1,pow(2,d+1), dot, tie);
+	return newNote(t-1,a,o+1,pow(2,d+1), dot, tie);
 }

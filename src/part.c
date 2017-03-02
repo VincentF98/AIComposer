@@ -22,6 +22,10 @@ const int perfectOctave		= 12;
 note* newNote(int tone, int accidental, int octave, int duration, int dotted, int tie) {
 	note* n = malloc(sizeof(note));
 	n->tone=tone;
+	if(tone==-1)
+		n->rest=1;
+	else
+		n->rest=0;
 	n->accidental=accidental;
 	n->octave=octave;
 	n->duration = duration;
@@ -119,8 +123,10 @@ note* acceptNote(FILE *f) {
 		t=5;
 	}else if(accept(f, "b")) {
 		t=6;
-	} else {
+	}else if(accept(f, "r")) {
 		t=-1;
+	} else {
+		return NULL;
 	}
 
 	if(accept(f, "is")) {
@@ -159,7 +165,7 @@ note* acceptNote(FILE *f) {
 
 	if(accept(f, "~"))
 		tie=1;
-//	printf("%d ", t);
+	//	printf("%d ", t);
 	return newNote(t,a,o,d,dot,tie);
 }
 int acceptWhitespace(FILE* f) {
@@ -181,7 +187,7 @@ void expect(FILE* f, char* sym) {
 }
 note* expectNote(FILE* f) {
 	note* n=acceptNote(f);
-	if(n->tone==-1) {
+	if(n==NULL) {
 		printf("ERROR: expected note\n");
 		exit(EXIT_FAILURE);
 	}
@@ -204,7 +210,7 @@ part* partFromFile(char* filename) {
 	}
 	note* n =acceptNote(f);
 	acceptWhitespace(f);
-	while(n->tone>=0) {
+	while(n!=NULL) {
 		pushNote(p,n);
 		n=acceptNote(f);
 		acceptWhitespace(f);
@@ -218,21 +224,28 @@ part* partFromFile(char* filename) {
 void makeStatic(part* p) {
 	if(p->relative==NULL)
 		return;
-	int intervall = p->notes[0]->tone-p->relative->tone;
+	int i=0;
+	while(i<p->size && p->notes[i]->rest==1)
+		i++;
+	int intervall = p->notes[i]->tone-p->relative->tone;
 	if(intervall > 4)
-		p->notes[0]->octave+=p->relative->octave-1;
+		p->notes[i]->octave+=p->relative->octave-1;
 	else if(intervall < -4)
-		p->notes[0]->octave+=p->relative->octave+1;
+		p->notes[i]->octave+=p->relative->octave+1;
 	else
-		p->notes[0]->octave+=p->relative->octave;
-	for(int i=1; i<p->size; i++) {
-		intervall=p->notes[i]->tone-p->notes[i-1]->tone;
-		if(intervall > 4)
-			p->notes[i]->octave+=p->notes[i-1]->octave-1;
-		else if(intervall < -4)
-			p->notes[i]->octave+=p->notes[i-1]->octave+1;
-		else
-			p->notes[i]->octave+=p->notes[i-1]->octave;
+		p->notes[i]->octave+=p->relative->octave;
+	int li=i;
+	for(i++; i<p->size; i++) {
+		if(p->notes[i]->rest==0) {
+			intervall=p->notes[i]->tone-p->notes[li]->tone;
+			if(intervall > 4)
+				p->notes[i]->octave+=p->notes[li]->octave-1;
+			else if(intervall < -4)
+				p->notes[i]->octave+=p->notes[li]->octave+1;
+			else
+				p->notes[i]->octave+=p->notes[li]->octave;
+			li=i;
+		}	
 	}
 	free(p->relative);
 	p->relative=NULL;
@@ -241,25 +254,32 @@ void makeRelative(part* p, note* r) {
 	if(p->relative!=NULL)
 		makeStatic(p);
 	p->relative=r;
-	int intervall = p->notes[0]->tone-r->tone;
+	int i = 0;
+	while(i < p->size && p->notes[i]->rest==1)
+		i++;
+	int intervall = p->notes[i]->tone-r->tone;
 	int o, ob;
-	o= p->notes[0]->octave;
+	o= p->notes[i]->octave;
 	if(intervall > 4)
-		p->notes[0]->octave-=r->octave-1;
+		p->notes[i]->octave-=r->octave-1;
 	else if(intervall < -4)
-		p->notes[0]->octave-=r->octave+1;
+		p->notes[i]->octave-=r->octave+1;
 	else
-		p->notes[0]->octave-=r->octave;
-for(int i=1; i<p->size; i++) {
-		intervall=p->notes[i]->tone-p->notes[i-1]->tone;
-		ob=o;
-		o=p->notes[i]->octave;
-		if(intervall > 4)
-			p->notes[i]->octave-=ob-1;
-		else if(intervall < -4)
-			p->notes[i]->octave-=ob+1;
-		else
-			p->notes[i]->octave-=ob;
+		p->notes[i]->octave-=r->octave;
+	int li=i;
+	for(i++; i<p->size; i++) {
+		if(p->notes[i]->rest==0) {
+			intervall=p->notes[i]->tone-p->notes[li]->tone;
+			ob=o;
+			o=p->notes[i]->octave;
+			if(intervall > 4)
+				p->notes[i]->octave-=ob-1;
+			else if(intervall < -4)
+				p->notes[i]->octave-=ob+1;
+			else
+				p->notes[i]->octave-=ob;
+			li=i;
+		}
 	}
 }
 int getPitch(note* n) {

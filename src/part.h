@@ -3,6 +3,7 @@
 
 typedef struct {
 	int tone;
+	int rest;
 	int accidental;
 	int octave;
 	int duration;
