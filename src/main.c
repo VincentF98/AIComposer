@@ -6,11 +6,11 @@
 #include "part.h"
 #include "nn.h"
 
-#define RATE 1.0
+#define RATE 1.25
 #define MIN(a,b) ((a)<(b)?(a):(b))
-#define HIDDENSIZE	15
+#define HIDDENSIZE	18
 #define NOTESIZE		18
-#define IPN	1
+#define IPN	3
 void fillinput(neuralnet* nn, note* n, int mode);
 void train(neuralnet*nn, note* n);
 note* parseoutput(neuralnet* nn);
@@ -22,10 +22,9 @@ int main(int argc, char* argv[]) {
 	part** parts = malloc((argc-1)*sizeof(part*));
 	for(int i=0; i< argc-1;i++) {
 		parts[i]=partFromFile(argv[i+1]);
-		makeStatic(parts[i]);
 		printToFile(parts[i], "testout.ly");
 	}
-	for(int g = 0; g<500;g++) {
+	for(int g = 0; g<300;g++) {
 		for(int p=0; p< argc-1;p++) {
 			fillinput(nn,parts[p]->notes[0],0);
 			for(int i=1;i<MIN(parts[p]->size,g/IPN+2);i++) {
@@ -39,7 +38,9 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	part *pout = newPart();
-	note* n = newNote(0,0,2,4,0,0);
+	note* r = newNote(0,0,2,4,0,0);
+	note* n = newNote(0,0,0,4,0,0);
+	pout->relative=r;
 	pushNote(pout, n);
 	fillinput(nn,n,0);
 	for(int i =1; i< 200; i++) {
@@ -76,13 +77,13 @@ void fillinput(neuralnet* nn, note* n, int mode) {
 	else if(n->accidental==1)
 		inputs[HIDDENSIZE+9]=1;
 	switch(n->octave) {
-		case 1:
+		case -1:
 			inputs[HIDDENSIZE+10]=1;
 			break;
-		case 2:
+		case 0:
 			inputs[HIDDENSIZE+11]=1;
 			break;
-		case 3:
+		case 1:
 			inputs[HIDDENSIZE+12]=1;
 	}
 	switch(n->duration) {
@@ -115,13 +116,13 @@ void train(neuralnet*nn, note* n) {
 	else if(n->accidental==1)
 		targets[9]=1;
 	switch(n->octave) {
-		case 1:
+		case -1:
 			targets[10]=1;
 			break;
-		case 2:
+		case 0:
 			targets[11]=1;
 			break;
-		case 3:
+		case 1:
 			targets[12]=1;
 	}
 	switch(n->duration) {
@@ -168,5 +169,5 @@ note* parseoutput(neuralnet* nn) {
 		dot=1;
 	if(get_output(nn, nn->numlayers,17) > 0.8)
 		tie=1;
-	return newNote(t-1,a,o+1,pow(2,d+1), dot, tie);
+	return newNote(t-1,a,o-1,pow(2,d+1), dot, tie);
 }

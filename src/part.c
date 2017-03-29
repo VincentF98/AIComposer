@@ -307,7 +307,10 @@ void fprintTone(FILE *f, note* n) {
 
 }
 void fprintNote(FILE* f, note* n) {
-	fprintTone(f,n);	
+	if(n->rest==0)
+		fprintTone(f,n);
+	else
+		fputc('r', f);
 	fprintf(f, "%d", n->duration);
 	if(n->dotted==1)
 		fputc('.', f);
