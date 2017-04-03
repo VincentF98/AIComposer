@@ -18,5 +18,5 @@ obj/%.o: src/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -rf ./bin/componist
+	rm -rf ./bin/composer
 	rm -rf ./obj/*.o

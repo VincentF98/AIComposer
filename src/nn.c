@@ -191,7 +191,7 @@ int get_layersize(neuralnet* nn, int layer) {
 	if(layer == 0)
 		return nn->numinputs;
 	return nn->layers[layer-1].size;
-	printf("notes: %d",c->n_notes);
+	//printf("notes: %d",c->n_notes);
 }
 
 double sigmoid(double z) {
