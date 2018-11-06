@@ -10,7 +10,7 @@
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define HIDDENSIZE	18
 #define NOTESIZE		18
-#define IPN	3
+#define IPN	1
 void fillinput(neuralnet* nn, note* n, int mode);
 void train(neuralnet*nn, note* n);
 note* parseoutput(neuralnet* nn);
@@ -24,10 +24,10 @@ int main(int argc, char* argv[]) {
 		parts[i]=partFromFile(argv[i+1]);
 		printToFile(parts[i], "testout.ly");
 	}
-	for(int g = 0; g<300;g++) {
+	for(int g = 0; g<1000;g++) {
 		for(int p=0; p< argc-1;p++) {
 			fillinput(nn,parts[p]->notes[0],0);
-			for(int i=1;i<MIN(parts[p]->size,g/IPN+2);i++) {
+			for(int i=1;i<MIN(parts[p]->size,1000);i++) {
 				train(nn,parts[p]->notes[i]);
 				fillinput(nn,parts[p]->notes[i-1],1);
 			}

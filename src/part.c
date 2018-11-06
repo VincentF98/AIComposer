@@ -326,6 +326,7 @@ void printToFile(part* p, char* filename) {
 	fprintf(f, "Stimme = \\relative ");
 	fprintTone(f,p->relative);
 	fprintf(f, " {\n");
+	fprintf(f, "\t\\tempo 4 = 150\n");
 	fprintf(f, "\t\\clef \"treble\"\n");
 	for(int i = 0; i<p->size; i++) {
 		fprintNote(f, p->notes[i]);
